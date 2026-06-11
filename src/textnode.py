@@ -35,8 +35,8 @@ def text_node_to_html_node(text_node: TextNode) -> LeafNode:
     node_map = {
         TextType.TEXT: LeafNode(value=text_node.text),
         TextType.BOLD: LeafNode("b", text_node.text),
-        TextType.ITALIC: LeafNode(),
-        TextType.CODE: LeafNode(),
+        TextType.ITALIC: LeafNode("i", text_node.text),
+        TextType.CODE: LeafNode("code", text_node.text),
         TextType.LINK: LeafNode("a", text_node.text, {"href": text_node.url or ""}),
         TextType.IMAGE: LeafNode("img", "", {"src": "", "alt": "alt text"}),
     }
