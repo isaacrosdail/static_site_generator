@@ -1,11 +1,13 @@
 import os
 import shutil
+import sys
+
 from pathlib import Path
 
 from block_markdown import markdown_to_html_node, extract_title
 
 
-def generate_page(from_path, template_path, dest_path):
+def generate_page(basepath, from_path, template_path, dest_path):
     print(f"Generating page from {from_path} to {dest_path} using {template_path}")
 
     # from_path md file:
@@ -20,8 +22,11 @@ def generate_page(from_path, template_path, dest_path):
     md_as_html = markdown_to_html_node(md_contents).to_html()
     # Use extract title to grab the title for page
     page_title = extract_title(md_contents)
+
     # Replace the {{ Title }} and {{ Content }} placeholders in the template with the HTML + title
     replaced_template = template_contents.replace("{{ Title }}", page_title).replace("{{ Content }}", md_as_html)
+    # Replace hrefs/srcs:
+    replaced_template = replaced_template.replace('href="/', f'href="{basepath}').replace('src="/', 'src="/{basepath}')
 
     # Write the new full HTML page to a file at dest_path
     dest_dir_path = os.path.dirname(dest_path)
@@ -30,7 +35,7 @@ def generate_page(from_path, template_path, dest_path):
         f.write(replaced_template)
 
 
-def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+def generate_pages_recursive(basepath, dir_path_content, template_path, dest_dir_path):
     # Crawl every entry in content directory
     # Recursive case? go thru dirs
     for name in os.listdir(dir_path_content):
@@ -38,18 +43,17 @@ def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
         dest_dir_path_child = os.path.join(dest_dir_path, name)
         # Recursive case:
         if os.path.isdir(dir_path_content_child):
-            generate_pages_recursive(dir_path_content_child, template_path, dest_dir_path_child)
+            generate_pages_recursive(basepath, dir_path_content_child, template_path, dest_dir_path_child)
         # For each md file found, generate a new html file using the same template.html
         # Base case? "stop" and call generate_page instead of generate_page_r?
         if os.path.isfile(dir_path_content_child):
             final_dest_path = Path(dest_dir_path_child).with_suffix(".html")
-            generate_page(dir_path_content_child, template_path, final_dest_path)
+            generate_page(basepath, dir_path_content_child, template_path, final_dest_path)
 
 
-def rebuild_public():
-    # Delete contents of public dir & recreate fresh
-    shutil.rmtree("public", ignore_errors=True) # so first run doesn't crash
-    os.mkdir("public")
+def rebuild_dest_dir(dest_dir):
+    shutil.rmtree(dest_dir, ignore_errors=True) # so first run doesn't crash
+    os.mkdir(dest_dir)
 
 def copy_r(src: str | os.PathLike[str], dst: str | os.PathLike[str]) -> None:
     for name in os.listdir(src):
@@ -68,16 +72,19 @@ def copy_r(src: str | os.PathLike[str], dst: str | os.PathLike[str]) -> None:
 
 
 def main():
+    # Grab first arg as root path for site
+    basepath = sys.argv[0] if sys.argv[0] else "/"
 
-    # Rebuild public dir from scratch
-    rebuild_public()
-    # Recursively copy contents of static -> public
-    copy_r("static", "public")
+    dest_dir = "docs"
+    # Rebuild dest_dir from scratch
+    rebuild_dest_dir(dest_dir)
+    # Recursively copy contents of static -> dest_dir
+    copy_r("static", dest_dir)
 
     # Generate a page from content/index.md using template.html and write it to public/index.html
     #####generate_page("content/index.md", "template.html", "public/index.html")
     # Generate ALL our pages from our .md files:
-    generate_pages_recursive("content", "template.html", "public")
+    generate_pages_recursive(basepath, "content", "template.html", dest_dir)
 
 
 if __name__ == "__main__":
