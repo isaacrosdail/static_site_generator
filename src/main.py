@@ -26,7 +26,7 @@ def generate_page(basepath, from_path, template_path, dest_path):
     # Replace the {{ Title }} and {{ Content }} placeholders in the template with the HTML + title
     replaced_template = template_contents.replace("{{ Title }}", page_title).replace("{{ Content }}", md_as_html)
     # Replace hrefs/srcs:
-    replaced_template = replaced_template.replace('href="/', f'href="{basepath}').replace('src="/', 'src="/{basepath}')
+    replaced_template = replaced_template.replace('href="/', f'href="{basepath}').replace('src="/', f'src="{basepath}')
 
     # Write the new full HTML page to a file at dest_path
     dest_dir_path = os.path.dirname(dest_path)
@@ -73,7 +73,7 @@ def copy_r(src: str | os.PathLike[str], dst: str | os.PathLike[str]) -> None:
 
 def main():
     # Grab first arg as root path for site
-    basepath = sys.argv[0] if sys.argv[0] else "/"
+    basepath = sys.argv[1] if sys.argv[1] else "/"
 
     dest_dir = "docs"
     # Rebuild dest_dir from scratch
